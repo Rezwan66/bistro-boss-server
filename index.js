@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB
-const uri = "mongodb+srv://<username>:<password>@cluster0.zjzxbzp.mongodb.net/?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zjzxbzp.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
     serverApi: {
@@ -25,6 +25,20 @@ async function run() {
         // await client.connect();
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
+
+        const menuCollection = client.db("bistroDB").collection("menu");
+        const reviewsCollection = client.db("bistroDB").collection("reviews");
+
+        app.get('/menu', async (req, res) => {
+            const result = await menuCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.get('/reviews', async (req, res) => {
+            const result = await reviewsCollection.find().toArray();
+            res.send(result);
+        })
+
     } finally {
         // await client.close();
     }
