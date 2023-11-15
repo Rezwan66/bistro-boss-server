@@ -26,10 +26,26 @@ async function run() {
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
+        const userCollection = client.db("bistroDB").collection("users");
         const menuCollection = client.db("bistroDB").collection("menu");
         const reviewsCollection = client.db("bistroDB").collection("reviews");
         const cartCollection = client.db("bistroDB").collection("cart");
 
+        // user related api
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            // insert email if user doesnt exist:
+            // 3ways: (1. unique email 2. upsert 3. simple checking)
+            const query = { email: user.email };
+            const userExists = await userCollection.findOne(query);
+            if (userExists) {
+                return res.send({ message: 'user already exists', insertedId: null })
+            }
+            const result = await userCollection.insertOne(user);
+            res.send(result);
+        })
+
+        // menu related api
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
             res.send(result);
