@@ -10,6 +10,9 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+
+
+
 // My middleware
 const verifyToken = (req, res, next) => {
     console.log('inside verify token', req.headers.authorization);
@@ -26,6 +29,8 @@ const verifyToken = (req, res, next) => {
     })
     // next();
 }
+
+
 
 // MongoDB
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zjzxbzp.mongodb.net/?retryWrites=true&w=majority`;
@@ -58,11 +63,37 @@ async function run() {
             res.send({ token });
         })
 
+        // use verifyAdmin after verifyToken
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            const isAdmin = user?.role === 'admin';
+            if (!isAdmin) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            next();
+        }
+
         // user related api
-        app.get('/users', verifyToken, async (req, res) => {
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
 
             const result = await userCollection.find().toArray();
             res.send(result);
+        })
+
+        app.get('/users/admin/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            let admin = false;
+            if (user) {
+                admin = user?.role === 'admin';
+            }
+            res.send({ admin });
         })
 
         app.post('/users', async (req, res) => {
